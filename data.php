@@ -34,7 +34,11 @@ switch($_GET['op']) {
 	case 'getPlayersByGame':
 		echo json_encode(getPlayersByGame($dbh, $_GET['id']));
 		break;
-		
+
+	case 'getRequestID':
+		echo getNonce($dbh);
+		break;		
+
 	default:
 		echo json_encode('error!');
 		break;
@@ -82,5 +86,11 @@ function getGamesByPlayer($db, $playerId) {
 function getPlayersByGame($db, $gameId) {
 	$result = $db->query('SELECT * FROM player WHERE id IN (SELECT user_id FROM stats WHERE game_id = "'.$gameId . '") ORDER BY LOWER(username)');
 	return $result->fetchAll(PDO::FETCH_CLASS, 'PlayerStats');
+}
+
+function getNonce($db){	
+	$nonce = uniqid('BRDA_',true);
+	$db->exec('INSERT INTO nonces (uuid,timestamp,ttl) VALUES (\'' . $nonce . '\',' . time() . ',' . 1500 . ')');
+	return $nonce;
 }
 ?>

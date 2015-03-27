@@ -2,11 +2,18 @@
 	require_once("openid.php");
 	require_once("brda_steamauth.config.php");
 
+
 	try{
-		$openID = new LightOpenID($config["LOCAL_DOMAIN"]);
+		$openID = new LightOpenID($sc_config["LOCAL_DOMAIN"]);
 		// Establish the provider and redirect to Steam's auth page
  		if(!$openID->mode){
-			$openID->identity = $config["STEAM_PROVIDER_URL"];
+			// Create and register nonce with request
+			$nonceRequestURL = $sc_config["LOCAL_DOMAIN"] . dirname($_SERVER['SCRIPT_NAME']) . "/data.php?op=getRequestID";
+			$nonce = file_get_contents($sc_config["LOCAL_DOMAIN"] . "/" . dirname($_SERVER['SCRIPT_NAME']) . "/data.php?op=getRequestID");
+			
+			$openID->returnUrl = $sc_config["LOCAL_DOMAIN"] . $sc_config["CALLBACK_URL"] . "?requestID=" . urlencode($nonce);
+			$openID->identity = $sc_config["STEAM_PROVIDER_URL"];
+			
 			header('Location: '  .$openID->authUrl());
 		}
 		// If the user cancels, we're done here
