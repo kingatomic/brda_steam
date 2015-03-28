@@ -10,6 +10,12 @@ class GameData {
 	public $numPlayers;
 }
 
+class AuthToken {
+	public $uuid;
+	public $timestamp;
+	public $ttl;
+}
+
 $dbh = new PDO('sqlite:stats.db');
 
 header('Content-Type: application/json');
@@ -36,8 +42,18 @@ switch($_GET['op']) {
 		break;
 
 	case 'getRequestID':
-		echo getNonce($dbh);
+		echo json_encode(getAuthToken($dbh));
 		break;		
+
+	case 'validateRequestID':
+		if(isset($_GET['requestID'])){
+			$requestID = SQLite3::escapeString($_GET['requestID']);
+			echo json_encode(validateAuthToken($dbh, $requestID));
+		}
+		else{
+			echo json_encode('error!');
+		}
+		break;
 
 	default:
 		echo json_encode('error!');
@@ -88,9 +104,20 @@ function getPlayersByGame($db, $gameId) {
 	return $result->fetchAll(PDO::FETCH_CLASS, 'PlayerStats');
 }
 
-function getNonce($db){	
-	$nonce = uniqid('BRDA_',true);
-	$db->exec('INSERT INTO nonces (uuid,timestamp,ttl) VALUES (\'' . $nonce . '\',' . time() . ',' . 1500 . ')');
-	return $nonce;
+function getAuthToken($db){	
+	$token = uniqid('BRDA_',true);
+	$db->exec('INSERT INTO authtokens (uuid,timestamp,ttl) VALUES (\'' . $token . '\',' . time() . ',' . 15000  . ')'); // 15s TTL, PHP's time() returns seconds and not ms, because PHP
+	return $token;
+}
+
+function validateAuthToken($db,$token){
+	$result = $db->query('SELECT * FROM authtokens WHERE uuid = "' . $token . '"');
+	$authTokens = $result->fetchAll(PDO::FETCH_CLASS, 'AuthToken');
+	if(count($authTokens) != 1) return "error!"; // null set => error, possibly a csrf attempt or re-submitted form
+	$authToken = $authTokens[0];
+	$currentTime = time();
+	if($currentTime > ($authToken->timestamp + ($authToken->ttl / 1000) )) return "timeout"; // Timeout, if current time is greater than token's insertion time + the TTL
+	$db->query('DELETE FROM authtokens WHERE uuid = "' . $authToken->uuid . '"');
+	return $authToken;
 }
 ?>

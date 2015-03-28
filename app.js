@@ -1,6 +1,10 @@
 (function() {
 	var app = angular.module('brdaStats', []);
 
+	app.config(function($locationProvider){
+		$locationProvider.html5Mode(true);
+	});
+
 	app.controller('StatsController', [ '$http', function($http) {
 		var self = this;
 		
@@ -55,4 +59,37 @@
 			return this.tab === checkTab;
 		};
 	});
+
+	app.controller('MessagesController', ['$http', '$location', function($http,$location){
+		self = this;
+	
+		self.steamIDLong = $location.search()['openid.identity'];
+		self.requestID = $location.search()['requestID'].replace(/"/g,"");
+
+		var reSteamID = /(\d+)$/g;
+		var matches = reSteamID.exec(this.steamIDLong);
+		self.steamID = matches[0];
+
+		$http.get('data.php', {
+			params: {
+				op:		'validateRequestID',
+				requestID:	this.requestID
+			}
+		}).success(function(data){
+			if(data == "error!") {self.message = "Error";}
+			else if(data == "timeout"){self.message = "Timeout";}
+			else if(typeof data.uuid != 'undefined'){	//Successful validation of CSRF Token
+				console.log("Logged in: " + data.uuid);
+				$http.get('data.php',{
+					params: {
+						op:		'getPlayer',
+						id:		self.steamID
+					}
+				}).success(function(data){
+					self.message = "Welcome, " + data[0].username;	
+				}).error(function(){console.log("ERROR");});
+			}
+			else{self.message = "Error";}
+		});
+	}]);
 })();
