@@ -1,4 +1,6 @@
 <?php
+require_once("brda_steamauth.config.php");
+
 class PlayerStats {
 	public $id;
 	public $username;
@@ -17,48 +19,6 @@ class AuthToken {
 }
 
 $dbh = new PDO('sqlite:stats.db');
-
-header('Content-Type: application/json');
-
-switch($_GET['op']) {
-	case 'getPlayer':
-		echo json_encode(getPlayer($dbh, $_GET['id']));
-		break;
-		
-	case 'getAllPlayers':
-		echo json_encode(getAllPlayers($dbh));
-		break;
-		
-	case 'getAllGames':
-		echo json_encode(getAllGames($dbh));
-		break;
-		
-	case 'getGamesByPlayer':
-		echo json_encode(getGamesByPlayer($dbh, $_GET['id']));
-		break;
-		
-	case 'getPlayersByGame':
-		echo json_encode(getPlayersByGame($dbh, $_GET['id']));
-		break;
-
-	case 'getRequestID':
-		echo json_encode(getAuthToken($dbh));
-		break;		
-
-	case 'validateRequestID':
-		if(isset($_GET['requestID'])){
-			$requestID = SQLite3::escapeString($_GET['requestID']);
-			echo json_encode(validateAuthToken($dbh, $requestID));
-		}
-		else{
-			echo json_encode('error!');
-		}
-		break;
-
-	default:
-		echo json_encode('error!');
-		break;
-}
 
 function getAllPlayers($db) {
 	// TODO: allow order to be specified dynamically
@@ -104,9 +64,9 @@ function getPlayersByGame($db, $gameId) {
 	return $result->fetchAll(PDO::FETCH_CLASS, 'PlayerStats');
 }
 
-function getAuthToken($db){	
+function getAuthToken($db,$ttl){	
 	$token = uniqid('BRDA_',true);
-	$db->exec('INSERT INTO authtokens (uuid,timestamp,ttl) VALUES (\'' . $token . '\',' . time() . ',' . 15000  . ')'); // 15s TTL, PHP's time() returns seconds and not ms, because PHP
+	$db->exec('INSERT INTO authtokens (uuid,timestamp,ttl) VALUES (\'' . $token . '\',' . time() . ',' . $ttl . ')'); 
 	return $token;
 }
 

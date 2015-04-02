@@ -14,8 +14,8 @@
 		this.currentGame = null;
 		this.currentMember = null;
 
-		$http.get('data.php', { params: { op: 'getAllPlayers' } }).success(function(result) { self.members = result; });
-		$http.get('data.php', { params: { op: 'getAllGames' } }).success(function(result) { self.games = result; });
+		$http.get('endpoints.php', { params: { op: 'getAllPlayers' } }).success(function(result) { self.members = result; });
+		$http.get('endpoints.php', { params: { op: 'getAllGames' } }).success(function(result) { self.games = result; });
 				
 		this.setMember = function(obj) {
 			var self = this;
@@ -23,7 +23,7 @@
 			this.currentGame = null;
 			this.currentMember = obj;
 			
-			$http.get('data.php', { params: { op: 'getGamesByPlayer', id: obj.id } }).success(function(result) { self.currentMember.games = result; });
+			$http.get('endpoints.php', { params: { op: 'getGamesByPlayer', id: obj.id } }).success(function(result) { self.currentMember.games = result; });
 		};
 
 		this.setGame= function(obj) {
@@ -32,7 +32,7 @@
 			this.currentMember = null;
 			this.currentGame = obj;
 
-			$http.get('data.php', { params: { op: 'getPlayersByGame', id: obj.id } }).success(function(result) { self.currentGame.players = result; });
+			$http.get('endpoints.php', { params: { op: 'getPlayersByGame', id: obj.id } }).success(function(result) { self.currentGame.players = result; });
 		};
 
 		this.isCurrentMember = function(id) {
@@ -70,7 +70,7 @@
 		var matches = reSteamID.exec(this.steamIDLong);
 		self.steamID = matches[0];
 
-		$http.get('data.php', {
+		$http.get('endpoints.php', {
 			params: {
 				op:		'validateRequestID',
 				requestID:	this.requestID
@@ -80,7 +80,7 @@
 			else if(data == "timeout"){self.message = "Timeout";}
 			else if(typeof data.uuid != 'undefined'){	//Successful validation of CSRF Token
 				console.log("Logged in: " + data.uuid);
-				$http.get('data.php',{
+				$http.get('endpoints.php',{
 					params: {
 						op:		'getPlayer',
 						id:		self.steamID
